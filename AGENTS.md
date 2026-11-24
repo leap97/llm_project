@@ -14,15 +14,30 @@ Docker와 FastAPI는 프로젝트의 필수 기술이다. 웹 서버는 Python�
 
 팀 주제, 사용자 역할, 문서 등급과 나머지 기술 스택은 제공된 소스와 팀의 결정에서 확인한다. 과제 템플릿의 역할명과 실행 명령은 예시로 취급한다. 서비스 소스가 아직 제공되지 않았다면 설계 가능한 항목과 소스 확인이 필요한 항목을 구분한다.
 
-### Windows PowerShell에서 Kali의 Codex 세션 재개
+### 학원 노트북에서 SSH로 Kali VM 사용
 
-같은 LAN의 Windows PC에서 다음 명령을 실행하고, Kali에서 이어갈 Codex 세션을 선택한다.
+학원 Windows 노트북의 VirtualBox에서 Kali Linux Purple VM을 실행한다. VirtualBox NAT는 Windows의 `127.0.0.1:2222`를 Kali VM의 `22`번 포트로 전달한다. 이 접속 주소는 해당 노트북에서만 유효하다.
+계정은 `kali`이며, 잠금 암호가 설정된 Windows 전용 키 `$env:USERPROFILE\.ssh\id_ed25519_kali`가 Windows `ssh-agent`에 로드된 상태를 전제로 한다.
+
+Windows 로컬 Codex는 기본적으로 Windows OpenSSH(`ssh.exe`)로 요청받은 명령을 직접 실행하고 출력을 읽는다. 학원 노트북에서 키 인증을 검증한 PowerShell 명령은 다음과 같다.
 
 ```powershell
-ssh -t kali@192.168.0.245 '~/.local/bin/codex resume'
+ssh.exe -p 2222 -i "$env:USERPROFILE\.ssh\id_ed25519_kali" -o IdentitiesOnly=yes -o BatchMode=yes kali@127.0.0.1 'whoami && hostname'
 ```
 
-Windows 터미널에 한국어로 지시하면 선택한 Kali 세션에서 작업을 수행한다. 프로젝트 작업을 시작할 때 해당 세션의 작업 경로와 저장소의 `AGENTS.md`를 확인한다.
+추가 입력 없이 첫 줄에 계정명 `kali`, 다음 줄에 호스트 이름 `kali`가 출력되면 SSH 키 인증에 성공한 것이다. `sudo` 권한은 별개다.
+
+사람이 PowerShell에서 대화형 Kali 셸을 열 때는 `-t`를 추가하고 원격 명령을 생략한다.
+
+```powershell
+ssh.exe -p 2222 -i "$env:USERPROFILE\.ssh\id_ed25519_kali" -o IdentitiesOnly=yes -o BatchMode=yes -t kali@127.0.0.1
+```
+
+Kali 안에서 기존 Codex CLI 세션을 이어갈 때만 원격 명령으로 `~/.local/bin/codex resume`를 지정한다. 재개한 세션에서는 작업 경로와 저장소의 `AGENTS.md`를 확인한다.
+
+```powershell
+ssh.exe -p 2222 -i "$env:USERPROFILE\.ssh\id_ed25519_kali" -o IdentitiesOnly=yes -o BatchMode=yes -t kali@127.0.0.1 '~/.local/bin/codex resume'
+```
 
 ## 2. 소통과 승인 범위
 
