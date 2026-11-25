@@ -22,13 +22,25 @@ Docker와 FastAPI는 프로젝트의 필수 기술이다. 웹 서버는 Python�
 
 ### 학원 노트북에서 SSH로 Kali VM 사용
 
-학원 Windows 노트북의 VirtualBox에서 Kali Linux Purple VM을 실행한다. VirtualBox NAT는 Windows의 `127.0.0.1:2222`를 Kali VM의 `22`번 포트로 전달한다. 이 접속 주소는 해당 노트북에서만 유효하다.
-계정은 `kali`이며, 잠금 암호가 설정된 Windows 전용 키 `$env:USERPROFILE\.ssh\id_ed25519_kali`가 Windows `ssh-agent`에 로드된 상태를 전제로 한다.
+학원 Windows 노트북의 VirtualBox에서 Kali Linux Purple VM을 실행한다. 두 어댑터는 각자 DHCP로 IPv4 주소를 받고 부팅할 때 자동으로 연결된다.
 
-Windows 로컬 Codex는 기본적으로 Windows OpenSSH(`ssh.exe`)로 요청받은 명령을 직접 실행하고 출력을 읽는다. 학원 노트북에서 키 인증을 검증한 PowerShell 명령은 다음과 같다.
+| Kali 인터페이스 | VirtualBox 연결 방식 | 용도 | 확인한 Kali 주소 |
+| --- | --- | --- | --- |
+| `eth0` (`bridged-eth0`) | 학원 유선망 브리지 | 같은 학원망의 팀원이 웹 서비스에 접속할 때 사용한다. | `192.168.0.245/24` |
+| `eth1` (`hostonly-eth1`) | 호스트 전용 | 학원 노트북에서 Kali를 SSH로 관리한다. | `192.168.56.116/24` |
+
+SSH 접속 대상은 `kali@192.168.56.116`, 포트는 `22`다. 주소가 달라졌다면 Kali VM 콘솔에서 `ip -br -4 addr`로 각 인터페이스의 현재 주소를 확인한다. 잠금 암호가 있는 전용 키 `$env:USERPROFILE\.ssh\id_ed25519_kali`는 Windows `ssh-agent`에 로드해 둔다.
+
+Windows가 새 IP의 호스트 키를 아직 모르면 Kali VM 콘솔에서 `ssh-keygen -E sha256 -lf /etc/ssh/ssh_host_ed25519_key.pub`로 ED25519 지문을 확인한다. Windows PowerShell에서 다음 명령을 실행하고, 표시된 지문이 콘솔의 값과 일치할 때 `yes`를 입력해 등록한다.
 
 ```powershell
-ssh.exe -p 2222 -i "$env:USERPROFILE\.ssh\id_ed25519_kali" -o IdentitiesOnly=yes -o BatchMode=yes kali@127.0.0.1 'whoami && hostname'
+ssh.exe -p 22 -i "$env:USERPROFILE\.ssh\id_ed25519_kali" -o IdentitiesOnly=yes -o HostKeyAlgorithms=ssh-ed25519 -o StrictHostKeyChecking=ask kali@192.168.56.116 'whoami && hostname'
+```
+
+Windows 로컬 Codex는 등록한 호스트 키를 확인한 뒤 Windows OpenSSH(`ssh.exe`)로 요청받은 명령을 실행하고 출력을 읽는다.
+
+```powershell
+ssh.exe -p 22 -i "$env:USERPROFILE\.ssh\id_ed25519_kali" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes kali@192.168.56.116 'whoami && hostname'
 ```
 
 추가 입력 없이 첫 줄에 계정명 `kali`, 다음 줄에 호스트 이름 `kali`가 출력되면 SSH 키 인증에 성공한 것이다. `sudo` 권한은 별개다.
@@ -36,13 +48,13 @@ ssh.exe -p 2222 -i "$env:USERPROFILE\.ssh\id_ed25519_kali" -o IdentitiesOnly=yes
 사람이 PowerShell에서 대화형 Kali 셸을 열 때는 `-t`를 추가하고 원격 명령을 생략한다.
 
 ```powershell
-ssh.exe -p 2222 -i "$env:USERPROFILE\.ssh\id_ed25519_kali" -o IdentitiesOnly=yes -o BatchMode=yes -t kali@127.0.0.1
+ssh.exe -p 22 -i "$env:USERPROFILE\.ssh\id_ed25519_kali" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes -t kali@192.168.56.116
 ```
 
 Kali 안에서 기존 Codex CLI 세션을 이어갈 때만 원격 명령으로 `~/.local/bin/codex resume`를 지정한다. 재개한 세션에서는 작업 경로와 저장소의 `AGENTS.md`를 확인한다.
 
 ```powershell
-ssh.exe -p 2222 -i "$env:USERPROFILE\.ssh\id_ed25519_kali" -o IdentitiesOnly=yes -o BatchMode=yes -t kali@127.0.0.1 '~/.local/bin/codex resume'
+ssh.exe -p 22 -i "$env:USERPROFILE\.ssh\id_ed25519_kali" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes -t kali@192.168.56.116 '~/.local/bin/codex resume'
 ```
 
 #### SSH 창을 닫은 뒤 sudo 작업 이어가기
