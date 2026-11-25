@@ -17,8 +17,27 @@ $domain = 'www.mcgoorm.com'
 $server = '192.168.0.245'
 $ruleTitle = 'MCGoorm classroom DNS'
 $ownerTag = 'Managed by MCGoorm-DNS.bat (leap97/llm_project)'
-$pauseAtEnd = $KeepOpen -or [string]::IsNullOrEmpty($Action)
-if ([string]::IsNullOrEmpty($Action)) { $Action = '/install' }
+$pauseAtEnd = $KeepOpen
+
+function Read-MenuAction {
+    Write-Host "MCGoorm DNS ($domain)"
+    Write-Host '1. 규칙 지정'
+    Write-Host '2. 규칙 삭제'
+    Write-Host '3. 상태 확인'
+    Write-Host '0. 종료'
+    while ($true) {
+        Write-Host '번호를 입력하고 Enter를 누르세요 > ' -NoNewline
+        $choice = [Console]::ReadLine()
+        if ($null -eq $choice) { return }
+        switch ($choice.Trim()) {
+            '1' { return '/install' }
+            '2' { return '/remove' }
+            '3' { return '/check' }
+            '0' { return }
+            default { Write-Host '0, 1, 2, 3 중 하나를 입력하세요.' }
+        }
+    }
+}
 
 function Test-ExactName($rule) {
     foreach ($name in $rule.Namespace) {
@@ -89,6 +108,11 @@ exit [int]`$result
 $mutex = $null
 $locked = $false
 try {
+    if ([string]::IsNullOrEmpty($Action)) {
+        $Action = Read-MenuAction
+        if (!$Action) { return 0 }
+        $pauseAtEnd = $true
+    }
     if ($Action -notin '/install', '/check', '/remove') {
         Write-Host '사용법  MCGoorm-DNS.bat [ /install | /check | /remove ]'
         return 2
